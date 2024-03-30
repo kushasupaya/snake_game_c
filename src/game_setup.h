@@ -20,6 +20,8 @@ enum board_init_status {
     INIT_UNIMPLEMENTED  // only used in stencil, no need to handle this
 };
 
+int* parse_compressed_board(char* compressed, int* cells_p, size_t width);
+
 enum board_init_status initialize_game(int** cells_p, size_t* width_p,
                                        size_t* height_p, snake_t* snake_p,
                                        char* board_rep);

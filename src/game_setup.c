@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 // Some handy dandy macros for decompression
 #define E_CAP_HEX 0x45
@@ -74,7 +75,6 @@ enum board_init_status initialize_game(int** cells_p, size_t* width_p,
                                        char* board_rep) {
     // TODO: implement!
     
-    
         if(board_rep==NULL){
             enum board_init_status status = initialize_default_board(cells_p, width_p, height_p);
             snake_p -> position_x = 2;
@@ -83,7 +83,8 @@ enum board_init_status initialize_game(int** cells_p, size_t* width_p,
             place_food(*cells_p, *width_p, *height_p);
             return status;
         }else{
-            decompress_board_str(cells_p,width_p, height_p, snake_p, board_rep);
+            enum board_init_status status = decompress_board_str(cells_p,width_p, height_p, snake_p, board_rep);
+            return status;
         }
     
     
@@ -105,91 +106,160 @@ enum board_init_status initialize_game(int** cells_p, size_t* width_p,
  * of times dictated by the number that follows the letter.
  */
 
-// Helper function to convert a string to an integer
-int str_to_int(const char *str) {
-    return atoi(str);
-}
 
-// Helper function to get the index of a cell in the board's cell array
-size_t get_cell_index(int row, int col, size_t width) {
-    return row * width + col;
-}
+// Decompress function
 
 enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
                                             size_t* height_p, snake_t* snake_p,
-                                            char* compressed) {
-    // TODO: implement!
-    if (cells_p == NULL || width_p == NULL || height_p == NULL || compressed == NULL)
-        return INIT_ERR_BAD_CHAR;
+                                            char* compressed) 
+{
+    char* temp = strdup(compressed);
+   
+    int snake_count = 0;
 
-    const char *delimiter = "|";
-    char *token;
-    char *saveptr;
-
-    // Extract dimensions from the compressed string
-    token = strtok_r((char *)compressed, "Bx|", &saveptr);
-    if (token == NULL)
-        return INIT_ERR_BAD_CHAR;
-
-    *height_p = str_to_int(token);
-    token = strtok_r(NULL, "x|", &saveptr);
-    if (token == NULL)
-        return INIT_ERR_BAD_CHAR;
-    *width_p = str_to_int(token);
-
-    // Allocate memory for cells
-    *cells_p = (int *)malloc((*width_p) * (*height_p) * sizeof(int));
-    if (*cells_p == NULL)
-        return INIT_ERR_BAD_CHAR;
-
-    // Initialize all cells to 0
-    memset(*cells_p, 0, (*width_p) * (*height_p) * sizeof(int));
-
-    // Move to the next token to read the board contents
-    token = strtok_r(NULL, delimiter, &saveptr);
-    if (token == NULL)
-        return INIT_ERR_BAD_CHAR;
-
-    // Initialize row and column indices
-    size_t row = 0, col = 0;
-
-    // Parse the board contents
-    while (*token != '\0') {
-        char direction = *token++;
-        size_t count = 0;
-        while (*token >= '0' && *token <= '9') {
-            count = count * 10 + (*token - '0');
-            token++;
+    char* cursor = compressed;
+    while (*cursor != '\0') {
+        if (*cursor == 'S') {
+            snake_count++;
+            cursor++;  // Move to the next character
+            if (*cursor != '1') {
+                printf("Geere: %c",*cursor);
+                return INIT_ERR_WRONG_SNAKE_NUM; // 'S' must be followed by '1'
+            }
         }
-
-        // Fill the cells based on the direction and count
-        switch (direction) {
-            case 'E':
-                for (size_t i = 0; i < count; i++) {
-                    (*cells_p)[get_cell_index(row, col++, *width_p)] = 1;
-                }
-                break;
-            case 'W':
-                for (size_t i = 0; i < count; i++) {
-                    (*cells_p)[get_cell_index(row, col++, *width_p)] = -1;
-                }
-                break;
-            case 'S':
-                for (size_t i = 0; i < count; i++) {
-                    (*cells_p)[get_cell_index(row++, col, *width_p)] = 1;
-                }
-                break;
-            default:
-                return INIT_ERR_BAD_CHAR;
-        }
+        cursor++;
+    }
+    if (snake_count != 1) {
+        return INIT_ERR_WRONG_SNAKE_NUM; 
     }
 
-    // Check if decoded dimensions match the specified dimensions
-    if (*height_p != row || *width_p != col) {
-        free(*cells_p);
-        *cells_p = NULL;
+    char* token = strtok(compressed, "|");
+    printf("This is the beginning: %s ", token);
+    
+    size_t height, width;
+    if (sscanf(token, "B%zux%zu", &height, &width) != 2) {
+        return INIT_ERR_INCORRECT_DIMENSIONS; 
+    }
+    // printf("Height: %zu\n", height);
+    // printf("Width: %zu\n", width);
+    int sum = 0;
+    
+    
+    token = strtok(NULL, "|WES");
+
+
+    
+    while (token != NULL) {
+        // char* c = token;
+        // while (*c != '\0') {
+        //     if (*c != 'B' && *c != 'E' && *c != 'S' && *c != 'W' && !isdigit(*c) && *c != 'x') {
+        //         return INIT_ERR_BAD_CHAR; // Unexpected character found
+        //     }
+        //     c++;
+        // }
+        sum += atoi(token); 
+        token = strtok(NULL, "|WES"); 
+    }
+
+    printf("snake: %d\n", snake_count);
+
+    if ((size_t)sum != height * width)
+    {
         return INIT_ERR_INCORRECT_DIMENSIONS;
     }
 
+    *height_p = height;
+    *width_p = width;
+    *cells_p = (int*)malloc(height * width * sizeof(int));
+    if (*cells_p == NULL) {
+        return INIT_ERR_BAD_CHAR; // Memory allocation failed
+    }
+    *cells_p = parse_compressed_board(temp, *cells_p, width);
+    if (*cells_p == NULL) {
+        return INIT_ERR_BAD_CHAR; // Parsing failed
+    }
+    place_food(*cells_p, *width_p, *height_p);
     return INIT_SUCCESS;
+
+}
+
+// Helper function to parse a substring and update cells_p accordingly
+void parse_substring(char* substring, int* cells_p, int* index) {
+    char board_type;
+    int number;
+    sscanf(substring, "%c%d", &board_type, &number);
+
+    switch (board_type) {
+        case 'W':
+            for (int k = 0; k < number; k++) {
+                cells_p[(*index)++] = FLAG_WALL; 
+            }
+            break;
+        case 'E':
+            for (int k = 0; k < number; k++) {
+                cells_p[(*index)++] = FLAG_PLAIN_CELL; 
+            }
+            break;
+        case 'S':
+            for (int k = 0; k < number; ++k) {
+                cells_p[(*index)++] = FLAG_SNAKE;
+            }
+            break;
+    }
+}
+
+int* parse_compressed_board(char* compressed, int* cells_p, size_t width) {
+    char* token = strtok(compressed, "|"); 
+    token = strtok(NULL, "|");
+    int index = 0;
+    while (token != NULL) {
+        char* ptr_string = strdup(token);
+
+        int* indexes = malloc(strlen(ptr_string) * sizeof(int)); 
+
+        int array_size = 0;
+
+       
+        int i = 0;
+        while (ptr_string[i] != '\0') {
+            if (ptr_string[i] == 'E' || ptr_string[i] == 'S' || ptr_string[i] == 'W') {
+                indexes[array_size++] = i;
+            }
+            i++;
+        }
+
+        if (array_size == 1) {
+            char board_type = ptr_string[0];
+            switch (board_type) {
+                case 'W':
+                case 'E':
+                case 'S':
+                    parse_substring(ptr_string, cells_p, &index);
+                    break;
+            }
+        } else {
+            for (int q = 0; q < array_size; q++) {
+                int starting_index = indexes[q];
+
+                
+                int final_index = (q + 1 < array_size) ? indexes[q + 1] : (int)strlen(ptr_string);
+
+                char* ptr_substring = malloc((final_index - starting_index + 1) * sizeof(char));
+
+                for (int j = starting_index; j < final_index; j++) {
+                    ptr_substring[j - starting_index] = ptr_string[j];
+                }
+                ptr_substring[final_index - starting_index] = '\0'; 
+
+                parse_substring(ptr_substring, cells_p, &index);
+
+                free(ptr_substring);
+            }
+        }
+
+        free(ptr_string); 
+        free(indexes); 
+        token = strtok(NULL, "|"); 
+    }
+    return cells_p;
 }

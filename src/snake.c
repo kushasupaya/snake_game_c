@@ -104,8 +104,7 @@ int main(int argc, char** argv) {
     }
 
     // ----------- DO NOT MODIFY ANYTHING IN `main` ABOVE THIS LINE -----------
-    char user_name_buffer[1000];
-    read_name(user_name_buffer);
+
     // Check validity of the board before rendering!
     // TODO: Implement (in Part 1C)
     // if ( ? board is not valid ? ) { return EXIT_FAILURE; }

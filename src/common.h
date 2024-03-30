@@ -22,8 +22,6 @@
 enum input_key { INPUT_UP, INPUT_DOWN, INPUT_LEFT, INPUT_RIGHT, INPUT_NONE };
 
 // TODO: declare global variables needed for your snake (as `extern`)! (part 1A)
-extern size_t g_board_height;
-extern size_t g_board_width;
 
 /** Global variables for game status.
  *
@@ -40,6 +38,8 @@ extern int g_score;      // game score: 1 point for every food eaten
 extern int g_snake_position_x; // x-coordinate of the snake's position
 extern int g_snake_position_y; // y-coordinate of the snake's position
 extern enum input_key g_snake_direction; // direction of the snake's movement
+extern size_t g_board_height;
+extern size_t g_board_width;
 
 /** Snake struct. This struct is not needed until part 2!
  * Fields:
