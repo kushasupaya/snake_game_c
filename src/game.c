@@ -152,7 +152,8 @@ void read_name(char* write_into) {
  */
 void teardown(int* cells, snake_t* snake_p) {
     // TODO: implement!
-    if(cells!=NULL){
-        free(cells);
-    }
+    // printf("cells: %p\n", cells);
+    // if(cells!=NULL){
+    //     free(cells);
+    // }
 }

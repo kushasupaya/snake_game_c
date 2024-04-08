@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include <stddef.h>
+#include "linked_list.h"
 
 // Let's see if we can keep this as simple as possible, lest we intimidate
 // students looking through the provided code.
@@ -50,6 +51,17 @@ typedef struct snake {
     int position_y;
     enum input_key direction;
 } snake_t;
+
+// typedef struct snake_segment {
+//     int position_x;
+//     int position_y;
+//     // You can add more attributes specific to each segment if needed
+// } snake_segment_t;
+
+// typedef struct snake {
+//     node_t* segments; // Pointer to the head of the linked list of snake segments
+//     enum input_key direction;
+// } snake_t;
 
 void set_seed(unsigned seed);
 unsigned generate_index(unsigned size);

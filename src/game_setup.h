@@ -19,6 +19,7 @@ enum board_init_status {
                         // incorrectly
     INIT_UNIMPLEMENTED  // only used in stencil, no need to handle this
 };
+int checking_for_snakes(int* cells_p, size_t array_size);
 
 int* parse_compressed_board(char* compressed, int* cells_p, size_t width);
 

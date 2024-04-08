@@ -83,6 +83,18 @@ enum board_init_status initialize_game(int** cells_p, size_t* width_p,
             place_food(*cells_p, *width_p, *height_p);
             return status;
         }else{
+            int my_ptr = 0;
+            char* my_str = strdup(board_rep);
+            while (my_str[my_ptr] != '\0')
+            {
+                if (my_str[my_ptr] == 'Z')
+                {
+                    free(my_str);
+                    return INIT_ERR_BAD_CHAR;
+                }
+                my_ptr++;
+            }
+            free(my_str);
             enum board_init_status status = decompress_board_str(cells_p,width_p, height_p, snake_p, board_rep);
             return status;
         }
@@ -113,58 +125,48 @@ enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
                                             size_t* height_p, snake_t* snake_p,
                                             char* compressed) 
 {
+    printf("Compressed: %s\n", compressed);
     char* temp = strdup(compressed);
    
-    int snake_count = 0;
-
     char* cursor = compressed;
     while (*cursor != '\0') {
         if (*cursor == 'S') {
-            snake_count++;
-            cursor++;  // Move to the next character
+            cursor++;
             if (*cursor != '1') {
-                printf("Geere: %c",*cursor);
-                return INIT_ERR_WRONG_SNAKE_NUM; // 'S' must be followed by '1'
+                free(temp);
+                return INIT_ERR_WRONG_SNAKE_NUM;
             }
         }
         cursor++;
     }
-    if (snake_count != 1) {
-        return INIT_ERR_WRONG_SNAKE_NUM; 
-    }
-
+    
     char* token = strtok(compressed, "|");
     printf("This is the beginning: %s ", token);
     
     size_t height, width;
     if (sscanf(token, "B%zux%zu", &height, &width) != 2) {
+        free(temp);
+        free(*cells_p);
         return INIT_ERR_INCORRECT_DIMENSIONS; 
     }
-    // printf("Height: %zu\n", height);
-    // printf("Width: %zu\n", width);
     int sum = 0;
     
     
     token = strtok(NULL, "|WES");
 
-
-    
     while (token != NULL) {
-        // char* c = token;
-        // while (*c != '\0') {
-        //     if (*c != 'B' && *c != 'E' && *c != 'S' && *c != 'W' && !isdigit(*c) && *c != 'x') {
-        //         return INIT_ERR_BAD_CHAR; // Unexpected character found
-        //     }
-        //     c++;
-        // }
         sum += atoi(token); 
         token = strtok(NULL, "|WES"); 
     }
 
-    printf("snake: %d\n", snake_count);
-
+    // printf("Sum: %d\n", sum);
+    // printf("Height: %zu\n", height);
+    // printf("Width: %zu\n", width);
+    // printf("Product of height and width: %zu\n", height * width);
     if ((size_t)sum != height * width)
     {
+        printf("\nIncorrect dimensions\n");
+        free(temp);
         return INIT_ERR_INCORRECT_DIMENSIONS;
     }
 
@@ -172,13 +174,22 @@ enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
     *width_p = width;
     *cells_p = (int*)malloc(height * width * sizeof(int));
     if (*cells_p == NULL) {
+        free(temp);
         return INIT_ERR_BAD_CHAR; // Memory allocation failed
     }
     *cells_p = parse_compressed_board(temp, *cells_p, width);
+    int snake_check = checking_for_snakes(*cells_p, height * width);
+    printf("Snake check: %d\n", snake_check);
+    if (snake_check != 1) {
+        free(temp);
+        return INIT_ERR_WRONG_SNAKE_NUM;
+    }
     if (*cells_p == NULL) {
+        free(temp);
         return INIT_ERR_BAD_CHAR; // Parsing failed
     }
     place_food(*cells_p, *width_p, *height_p);
+    free(temp);
     return INIT_SUCCESS;
 
 }
@@ -206,6 +217,17 @@ void parse_substring(char* substring, int* cells_p, int* index) {
             }
             break;
     }
+}
+
+int checking_for_snakes(int* cells_p, size_t array_size) {
+    int num_snakes = 0;
+    for (size_t i = 0; i < array_size; i++) {
+        if (cells_p[i] == FLAG_SNAKE) {
+            num_snakes++;
+        }
+    }
+
+    return num_snakes;
 }
 
 int* parse_compressed_board(char* compressed, int* cells_p, size_t width) {

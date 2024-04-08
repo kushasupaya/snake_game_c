@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     int snake_grows;  // 1 if snake should grow, 0 otherwise.
 
     enum board_init_status status;
-
+    printf("here is argc: %d\n", argc);
     // initialize board from command line arguments
     switch (argc) {
         case (2):
@@ -131,9 +131,8 @@ int main(int argc, char** argv) {
 
     while (g_game_over == 0) {
         update(cells, width, height, &snake, get_input(), snake_grows);
-        usleep(100000);
     }
-
+    
 
     end_game(cells, width, height, &snake);
 }
