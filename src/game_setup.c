@@ -70,6 +70,16 @@ enum board_init_status initialize_default_board(int** cells_p, size_t* width_p,
  *  - board_rep: a string representing the initial board. May be NULL for
  * default board.
  */
+
+int isValidCharacter(char c)
+{
+    if ((c >= '0' && c <= '9') || c == 'B' || c == 'W' || c == 'E' || c == 'S' || c=='|' || c=='x' || c=='\0') {
+        return 1; // Character is valid
+    } else {
+        return 0; // Character is invalid
+    }
+}
+
 enum board_init_status initialize_game(int** cells_p, size_t* width_p,
                                        size_t* height_p, snake_t* snake_p,
                                        char* board_rep) {
@@ -77,17 +87,23 @@ enum board_init_status initialize_game(int** cells_p, size_t* width_p,
     
         if(board_rep==NULL){
             enum board_init_status status = initialize_default_board(cells_p, width_p, height_p);
-            snake_p -> position_x = 2;
-            snake_p -> position_y = 2;
+            snake_p->body = malloc(sizeof(node_t));
+            snake_p->body->prev = snake_p->body->next = NULL; //first node of the list
+            direction_t * dt = snake_p->body->data = malloc(sizeof(direction_t));
+            dt->x = 2;
+            dt->y = 2;
             snake_p -> direction = INPUT_RIGHT;
             place_food(*cells_p, *width_p, *height_p);
             return status;
         }else{
+            //check it out
             int my_ptr = 0;
+            printf("Board rep: %s\n", board_rep);
             char* my_str = strdup(board_rep);
+            printf("My str: %s\n", my_str);
             while (my_str[my_ptr] != '\0')
             {
-                if (my_str[my_ptr] == 'Z')
+                if (!isValidCharacter(my_str[my_ptr])) 
                 {
                     free(my_str);
                     return INIT_ERR_BAD_CHAR;
@@ -103,6 +119,7 @@ enum board_init_status initialize_game(int** cells_p, size_t* width_p,
 
     return INIT_SUCCESS;
 }
+
 
 /** Takes in a string `compressed` and initializes values pointed to by
  * cells_p, width_p, and height_p accordingly. Arguments:
@@ -125,7 +142,7 @@ enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
                                             size_t* height_p, snake_t* snake_p,
                                             char* compressed) 
 {
-    printf("Compressed: %s\n", compressed);
+    // printf("Compressed: %s\n", compressed);
     char* temp = strdup(compressed);
    
     char* cursor = compressed;
@@ -141,7 +158,7 @@ enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
     }
     
     char* token = strtok(compressed, "|");
-    printf("This is the beginning: %s ", token);
+    // printf("This is the beginning: %s ", token); 
     
     size_t height, width;
     if (sscanf(token, "B%zux%zu", &height, &width) != 2) {
@@ -159,23 +176,18 @@ enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
         token = strtok(NULL, "|WES"); 
     }
 
-    // printf("Sum: %d\n", sum);
-    // printf("Height: %zu\n", height);
-    // printf("Width: %zu\n", width);
-    // printf("Product of height and width: %zu\n", height * width);
     if ((size_t)sum != height * width)
     {
-        printf("\nIncorrect dimensions\n");
         free(temp);
         return INIT_ERR_INCORRECT_DIMENSIONS;
     }
 
     *height_p = height;
     *width_p = width;
-    *cells_p = (int*)malloc(height * width * sizeof(int));
+    *cells_p = malloc(height * width * sizeof(int));
     if (*cells_p == NULL) {
         free(temp);
-        return INIT_ERR_BAD_CHAR; // Memory allocation failed
+        return INIT_ERR_BAD_CHAR; 
     }
     *cells_p = parse_compressed_board(temp, *cells_p, width);
     int snake_check = checking_for_snakes(*cells_p, height * width);
@@ -186,7 +198,7 @@ enum board_init_status decompress_board_str(int** cells_p, size_t* width_p,
     }
     if (*cells_p == NULL) {
         free(temp);
-        return INIT_ERR_BAD_CHAR; // Parsing failed
+        return INIT_ERR_BAD_CHAR;
     }
     place_food(*cells_p, *width_p, *height_p);
     free(temp);
@@ -251,6 +263,7 @@ int* parse_compressed_board(char* compressed, int* cells_p, size_t width) {
         }
 
         if (array_size == 1) {
+
             char board_type = ptr_string[0];
             switch (board_type) {
                 case 'W':

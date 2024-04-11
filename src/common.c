@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include <stddef.h>
 #include <stdlib.h>
 
 // TODO: define global variables needed for your snake! (part 1A)

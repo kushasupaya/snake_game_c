@@ -46,9 +46,24 @@ extern size_t g_board_width;
  * Fields:
  *  - None yet!
  */
+// typedef struct snake {
+//     int position_x;
+//     int position_y;
+//     enum input_key direction;
+// } snake_t;
+
+typedef struct direction_s{
+    int x;
+    int y;
+} direction_t ;
+
+typedef struct snake_node {
+    direction_t* data;
+    struct snake_node* next;
+} Node;
+
 typedef struct snake {
-    int position_x;
-    int position_y;
+    node_t* body;
     enum input_key direction;
 } snake_t;
 

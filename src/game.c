@@ -22,98 +22,96 @@
 
 #include "common.h" // Include necessary headers
 
-void move_snake(snake_t* snake_p, int* cells, size_t width, size_t height, int growing) {
-    // Calculate the new head position based on the current direction
-    int new_head_x = snake_p->position_x;
-    int new_head_y = snake_p->position_y;
-
-    switch (snake_p->direction) {
+void update_snake_direction(int* cells, size_t width, int* current_x_coord, int* current_y_coord, snake_t* snake_p, enum input_key input) {
+    switch (input) {
         case INPUT_UP:
-            new_head_y--;
-            break;
-        case INPUT_DOWN:
-            new_head_y++;
-            break;
-        case INPUT_LEFT:
-            new_head_x--;
-            break;
-        case INPUT_RIGHT:
-            new_head_x++;
-            break;
-        default:
-            // Invalid direction; do nothing
-            break;
-    }
-
-    // Update the snake's position
-    snake_p->position_x = new_head_x;
-    snake_p->position_y = new_head_y;
-
-}
-
-void update_snake_direction(snake_t* snake_p, enum input_key input) {
-    switch(input) {
-        case INPUT_UP:
-            snake_p->position_y--;
+            (*current_y_coord)--;
+            if (cells[*current_y_coord * (int)width + *current_x_coord] == FLAG_WALL) {
+                cells[++(*current_y_coord) * (int)width + *current_x_coord] = FLAG_SNAKE;
+                g_game_over = 1;
+                break;
+            }
             snake_p->direction = INPUT_UP;
             break;
         case INPUT_DOWN:
-            snake_p -> position_y++;
+            (*current_y_coord)++;
             snake_p->direction = INPUT_DOWN;
-            break;
-        case INPUT_LEFT:
-            snake_p -> position_x--;
-            snake_p->direction = INPUT_LEFT;
+            if (cells[*current_y_coord * (int)width + *current_x_coord] == FLAG_WALL) {
+                cells[--(*current_y_coord) * (int)width + *current_x_coord] = FLAG_SNAKE;
+                g_game_over = 1;
+                break;
+            }
             break;
         case INPUT_RIGHT:
-            snake_p -> position_x++;
+            (*current_x_coord)++;
             snake_p->direction = INPUT_RIGHT;
-            
+            if (cells[*current_y_coord * (int)width + *current_x_coord] == FLAG_WALL) {
+                cells[*current_y_coord * (int)width + --(*current_x_coord)] = FLAG_SNAKE;
+                g_game_over = 1;
+                break;
+            }
             break;
-        case INPUT_NONE:
-            // No input received; do nothing
+        case INPUT_LEFT:
+            (*current_x_coord)--;
+            if (cells[*current_y_coord * (int)width + *current_x_coord] == FLAG_WALL) {
+                cells[*current_y_coord * (int)width + ++(*current_x_coord)] = FLAG_SNAKE;
+                g_game_over = 1;
+                break;
+            }
+            snake_p->direction = INPUT_LEFT;
             break;
         default:
-            // Invalid input; do nothing
             break;
     }
 }
 
 
+void update(int* cells, size_t width, size_t height, snake_t* snake_p, enum input_key input, int growing) {   
 
-void update(int* cells, size_t width, size_t height, snake_t* snake_p,
-            enum input_key input, int growing) {
-    // `update` should update the board, your snake's data, and global
-    // variables representing game information to reflect new state. If in the
-    // updated position, the snake runs into a wall or itself, it will not move
-    // and global variable g_game_over will be 1. Otherwise, it will be moved
-    // to the new position. If the snake eats food, the game score (`g_score`)
-    // increases by 1. This function assumes that the board is surrounded by
-    // walls, so it does not handle the case where a snake runs off the board.
+    if(g_game_over==0){
+
+    direction_t* dt = snake_p -> body -> data;
+    int position_y = dt->y;
+    int position_x = dt->x;
 
 
-    // TODO: implement!
-    cells[snake_p -> position_y * width + snake_p -> position_x] = FLAG_PLAIN_CELL;
+    cells[position_y * (int)width + position_x] = FLAG_PLAIN_CELL;
 
-    if (input == INPUT_NONE)
-        input = snake_p -> direction;
-
-    update_snake_direction(snake_p, input);
-    if ( cells[snake_p -> position_x + snake_p -> position_y * width] == FLAG_FOOD){
+    if (cells[position_y * (int)width + position_x] == FLAG_FOOD) {
+        cells[position_y * (int)width + position_x] = FLAG_SNAKE;
         g_score++;
-        cells[snake_p -> position_x + snake_p -> position_y * width] = FLAG_SNAKE;
+        place_food(cells, width, height);
+  
+    }
+
+    // if no input
+    if (input == INPUT_NONE)
+        input = snake_p->direction;
+
+    // Update snake's coordinates based on input
+    update_snake_direction(cells, width, &position_x, &position_y, snake_p, input);
+
+    if (g_game_over == 1)
+    {
+        teardown(cells,  snake_p);
+        return;
+    }
+
+    cells[dt->y * (int)width + dt->x] = FLAG_PLAIN_CELL;
+
+    if (cells[position_y * (int)width + position_x] == FLAG_FOOD) {
+        g_score++;
         place_food(cells, width, height);
     }
 
-    if ( cells[snake_p -> position_x + snake_p -> position_y * width] == FLAG_WALL){
-        g_game_over = 1;
-        cells[(snake_p -> position_x + snake_p -> position_y * width) - 1] = FLAG_SNAKE;
-    }
-    else{
-        cells[snake_p -> position_x + snake_p -> position_y * width] = FLAG_SNAKE;
-    }
+    dt->x = position_x;
+    dt->y = position_y;
 
+    cells[position_y * (int)width + position_x] = FLAG_SNAKE;
+    }
 }
+
+
 
 /** Sets a random space on the given board to food.
  * Arguments:
